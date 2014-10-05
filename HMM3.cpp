@@ -36,7 +36,7 @@ struct matrix
 	}
 
     //creted the 2d matrix
-	double** initialize(int rows, int cols)
+	static double** initialize(int rows, int cols)
 	{
 	    double** temp;
 	    temp = (double**)calloc(rows , sizeof(double *));
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 	matrix A = matrix(board[0]);
 	matrix B = matrix(board[1]);
 	matrix q = matrix(board[2]);
-	/*
+
 	std::vector<int> stateSequence;
 	int Nstates, index;
 	std::istringstream iss;
@@ -162,8 +162,79 @@ int main(int argc, char **argv)
 	for(int i=0;i<Nstates;++i) {
 		iss >> index;
 		stateSequence.push_back(index);
-	}*/
-	
+	}
+
+    /**Viterbi algorithm*/
+
+    int K = A.col;
+    int M = B.col;
+    int T = Nstates;
+    int i,j,k;
+
+    double maximum;
+    double temp;
+
+    matrix pi = q&B.getCol(stateSequence[0]).transpose();
+    //pi.print();
+
+    double** T1 = A.initialize(K,T);
+    double** T2 = A.initialize(K,T);
+
+    for(i=0;i<K;++i)
+    {
+        T1[i][1] = pi.get(0,i)*B.get(i,stateSequence[0]);
+        T2[i][1] = 0;
+    }
+    for(i=1;i<T;++i)
+    {
+        for(j=0;j<K;++j)
+        {
+            maximum = -200;
+            index = 0;
+
+            for(k=0;k<K;++k)
+            {
+                temp = T1[k][i-1]*A.get(k,j)*B.get(j,stateSequence[i]);
+                std::cout << temp << std::endl;
+                if(temp>maximum)
+                {
+                    maximum = temp;
+                    index = k;
+                }
+            }
+            T1[j][i] =maximum;
+            T2[j][i] =index;
+        }
+    }
+    //double* Z = (double*)calloc(T , sizeof(int));
+    int* X = (int*)calloc(T , sizeof(int));
+
+    maximum = -200;
+    index = 0;
+
+    for(k=0;k<K;++k)
+    {
+        if(T1[k][T-1]>maximum)
+        {
+            maximum = T1[k][T-1];
+            index = k;
+        }
+    }
+    //Z[T-1] = index;
+    X[T-1] = index;
+
+    for(i=T-1;i>1;--i)
+    {
+        //Z[i-1] = T2[Z[i][i];
+        X[i-1] = T2[X[i]][i];
+    }
+
+    for(i=T-1;i>=0;--i)
+        std::cout << X[i]<< " ";
+    std::cout<<std::endl;
+
+
+
 	return 0;
 }
 
