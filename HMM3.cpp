@@ -92,8 +92,20 @@ struct matrix
 			temp[i][0] = m[i][index];
 		return matrix(temp,newRows,newCols);
 	}
+	
+	matrix getRow(int index)
+	{
+		int newRows = 1;
+		int newCols = col;
 
-	matrix operator*(matrix &H)
+		double** temp = initialize(newRows,newCols);
+
+		for(int i=0;i<newCols;++i)
+			temp[0][i] = m[index][i];
+		return matrix(temp,newRows,newCols);
+	}
+
+	matrix operator*(matrix H)
 	{
 		int newRows = row;
 		int newCols = H.col;
@@ -164,8 +176,92 @@ int main(int argc, char **argv)
 		stateSequence.push_back(index);
 	}
 
+	/**viterbi fast inte samma*/
+	
+	A.print();
+	std::cout << "\n" << std::endl;
+	B.print();
+	std::cout << "\n" << std::endl;
+	
+	
+	
+	int state,i,j,k;
+	double maximum = -200;
+	//double pr;
+	
+	double* tempArray = (double*)calloc(A.col,sizeof(double));
+	int* tempIndex = (int*)calloc(A.col,sizeof(int));
+	
+	//xi1	
+	int* Sequence = (int*)calloc(Nstates,sizeof(int));
+	matrix pr = q&B.getCol(stateSequence[0]).transpose();
+	//find max;
+	for(i=0;i<pr.col;++i)
+	{
+		if(pr.get(0,i)> maximum)
+		{
+			maximum = pr.get(0,i);
+			index = i;
+		}
+	}
+	Sequence[0] = index;
+	
+	for(int s=1;s<Nstates;++s)
+	{
+		state = stateSequence[s];
+		std::cout << "\nstate: " << state << "\nP ";
+		pr.print();
+		
+		for(j=0;j<A.col;++j)
+		{
+			matrix temp = A.getCol(j).transpose()&pr;
+			maximum = -200;
+			
+			std::cout << "\nTemp: "<< j <<": " << std::endl;
+			for(k=0;k<temp.col;++k)
+			{
+			std::cout << temp.get(0,k)*B.get(j,state) << " (" << k << ") " << std::endl;
+				if(temp.get(0,k) > maximum)
+				{
+					maximum = temp.get(0,k);
+					index = k;
+				}
+			tempArray[j] = maximum*B.get(j,state);
+			tempIndex[j] = index;
+			}			
+		}
+		
+		//std::cout << "\nMax: "<< tempArray[j] << "\nIndex: " << tempIndex[j] << "\nj = " << j << std::endl;
+		
+		//find max in tempArray
+		maximum = -200;
+		for(j=0;j<A.col;++j)
+		{
+			if(tempArray[j] > maximum)
+			{
+				maximum = tempArray[j];
+				index = tempIndex[j];
+				std::cout << "index " << tempIndex[j] << std::endl;
+			}
+		}
+		
+		Sequence[s] = index;
+		
+		//turn tempArrat into a matrix
+		double** t =(double**)calloc(1,sizeof(double*));
+		t[0] = tempArray;
+		pr = matrix(t,1,A.col);
+		
+	}
+	std::cout << "P ";
+	pr.print();
+	std::cout << "\nSequence ";
+	for(i=0;i<Nstates;++i)
+		std::cout << Sequence[i] << " ";
+	
+	
     /**Viterbi algorithm*/
-
+	/*
     int K = A.col;
     int M = B.col;
     int T = Nstates;
@@ -195,7 +291,7 @@ int main(int argc, char **argv)
             for(k=0;k<K;++k)
             {
                 temp = T1[k][i-1]*A.get(k,j)*B.get(j,stateSequence[i]);
-                std::cout << temp << std::endl;
+                //std::cout << temp << std::endl;
                 if(temp>maximum)
                 {
                     maximum = temp;
@@ -232,8 +328,7 @@ int main(int argc, char **argv)
     for(i=T-1;i>=0;--i)
         std::cout << X[i]<< " ";
     std::cout<<std::endl;
-
-
+	*/
 
 	return 0;
 }
