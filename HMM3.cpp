@@ -93,7 +93,7 @@ struct matrix
 			temp[i][0] = m[i][index];
 		return matrix(temp,newRows,newCols);
 	}
-	
+
 	matrix getRow(int index)
 	{
 		int newRows = 1;
@@ -189,18 +189,18 @@ int main(int argc, char **argv)
 	q.print();
 	std::cout << "------------\n" << std::endl;
 	*/
-	
+
 	int state,i,j,k;
 	double maximum = std::numeric_limits<double>::min();
 
 	double* tempArray = (double*)calloc(A.col,sizeof(double));
-	int* tempIndex = (int*)calloc(A.col,sizeof(int));
 	double* prob = (double*)calloc(A.col,sizeof(double));
-	
+
 	int** sequences = (int**)calloc(Nstates,sizeof(int*));
 	for(i=0;i<A.col;++i)
-		sequences[i] = (int*)calloc(A.col,sizeof(int));
-	
+		sequences[i] = (int*)calloc(B.col,sizeof(int));
+    double** ProbSequences = A.initialize(Nstates,A.col); //test
+
 	for(i=0;i<A.col;++i)
 	{
 		prob[i] = q.get(0,i)*B.get(i,stateSequence[0]);
@@ -211,65 +211,88 @@ int main(int argc, char **argv)
 			index = i;
 		}
 	}
-	
-	/*
+
+
 	std::cout << "\nstage 0" << std::endl;
 	for(i=0;i<A.col;++i)
 		std::cout << prob[i] << " ";
 	std::cout<<"\n\n"<<std::endl;
-	*/
+
+
+    if(Nstates==1){
+        maximum = prob[0];
+        index = 0;
+        for(i=1;i<B.col;++i)
+            if(prob[i]>maximum)
+                {maximum = prob[i]; index = i;}
+        std::cout << index <<std::endl;
+        return 0;
+    }
+
 
 	for(int s=1;s<Nstates;++s)
 	{
 		state = stateSequence[s];
-		
-		for(j=0;j<A.col;++j)
+
+		for(j=0;j<B.col;++j)
 		{
-			maximum = std::numeric_limits<double>::min();
-			for(k=0;k<A.col;++k)
+			maximum = prob[0] * A.get(0,j) * B.get(j,state);;
+			index = 0;
+			std::cout << prob[0] << " x "  << A.get(0,j) <<  " x " << B.get(j,state) <<" "<<"("<< 0 << ")"<<"| ";
+			for(k=1;k<A.col;++k)
 			{
 				double te = prob[k] * A.get(k,j) * B.get(j,state);
 				//double te = prob[k] + log(A.get(k,j)) + log(B.get(j,state));
-				//std::cout << prob[k] << " x "  << A.get(k,j) <<  " x " << B.get(j,state) <<" "<<"("<< k << ")"<<"| ";
+				std::cout << prob[k] << " x "  << A.get(k,j) <<  " x " << B.get(j,state) <<" "<<"("<< k << ")"<<"| ";
 				if(te > maximum)
 				{
 					maximum = te;
 					index = k;
-				}				
+				}
 			}
 		tempArray[j] = maximum;
-		//tempIndex[j] = index;
-		
+
 		sequences[j][s-1] = index;
-		
-		//std::cout << "j " << j << " A.col " << A.col << std::endl;
+
+		ProbSequences[j][s-1] = maximum;
+        std::cout << "index: " << index << " Maximum: " << maximum << std::endl;
+        //std::cout << "j " << j << " A.col " << A.col << std::endl;
 		//std::cout << "s " << s << " Nstates " << Nstates <<std::endl;
-		
-		//std::cout <<  "MAX: (" << prob[index] << " x "  << A.get(index,j) <<  " x " << B.get(j,state) << ")= " << tempArray[j] << " index="<< index << std::endl; 
+		//std::cout <<  "MAX: (" << prob[index] << " x "  << A.get(index,j) <<  " x " << B.get(j,state) << ")= " << tempArray[j] << " index="<< index << std::endl;
 		}
-				
-		for(i=0;i<A.col;++i)
+
+		for(i=0;i<B.col;++i)
 			prob[i] = tempArray[i];
-		
-		/*
+
+
 		std::cout << "stage "<< s << std::endl;
 		for(i=0;i<A.col;++i)
 			std::cout << prob[i] << " ";
 		std::cout<<"\n\n"<<std::endl;
-		*/
+
 	}
-	/*
-	for(i=0;i<A.col;++i)
+
+	for(i=0;i<B.col;++i)
 	{
 		for(j=0;j<Nstates;++j)
 			std::cout << sequences[i][j] << " ";
 		std::cout << std::endl;
 	}
-	*/
-	
+	std::cout << std::endl;
+
+	for(i=0;i<B.col;++i)
+	{
+		for(j=0;j<Nstates;++j)
+			std::cout << ProbSequences[i][j] << " | ";
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+
+
+
 	int current = 0;
-	maximum = std::numeric_limits<double>::min();
-	for(i=0;i<A.col;++i)
+	maximum = prob[0];
+	for(i=0;i<B.row;++i)
 	{
 		if(prob[i]>maximum)
 		{
@@ -277,23 +300,9 @@ int main(int argc, char **argv)
 			current = i;
 		}
 	}
-	
-	/*
-	int* S = (int*)calloc(Nstates-1,sizeof(int));
-	S[Nstates-2] = current;
-	for(i=Nstates-3;i>=0;--i)
-	{
-		current = sequences[current][i];
-		S[i] = current;
-	}
-	
-	for(i=0;i<Nstates-1;++i)
-		std::cout << S[i] << " ";
-	std::cout << std::endl;
-	*/
-	/**funkar*/
-	
+
 	std::vector<int> e;
+	//std::cout <<"i " << i <<" current: " << current<< std::endl;
 	for(i = Nstates-2;i>=0;i--)
 	{
 		e.push_back(current);
@@ -301,11 +310,16 @@ int main(int argc, char **argv)
 		//std::cout <<"i " << i <<" current: " << current<< std::endl;
 	}
 	e.push_back(current);
-	
+
+    //std::cout << e.size() << std::endl;
+
 	for(i=e.size()-1;i>=0;i--)
-		std::cout << e[i] << " ";
+    {
+        //std::cout << " ("<<i<<")->";
+        std::cout << e[i]<< " ";
+    }
 	std::cout<<std::endl;
-	
+
 	return 0;
 }
 
