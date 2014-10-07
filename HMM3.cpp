@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <sstream>
+#include <limits>
 
 struct matrix
 {
@@ -155,6 +156,9 @@ struct matrix
 
 };
 
+
+
+
 int main(int argc, char **argv)
 {
 	// Read the file
@@ -177,159 +181,131 @@ int main(int argc, char **argv)
 	}
 
 	/**viterbi fast inte samma*/
-	
+	/*
 	A.print();
-	std::cout << "\n" << std::endl;
+	std::cout << std::endl;
 	B.print();
-	std::cout << "\n" << std::endl;
-	
-	
+	std::cout << std::endl;
+	q.print();
+	std::cout << "------------\n" << std::endl;
+	*/
 	
 	int state,i,j,k;
-	double maximum = -200;
-	//double pr;
-	
+	double maximum = std::numeric_limits<double>::min();
+
 	double* tempArray = (double*)calloc(A.col,sizeof(double));
 	int* tempIndex = (int*)calloc(A.col,sizeof(int));
+	double* prob = (double*)calloc(A.col,sizeof(double));
 	
-	//xi1	
-	int* Sequence = (int*)calloc(Nstates,sizeof(int));
-	matrix pr = q&B.getCol(stateSequence[0]).transpose();
-	//find max;
-	for(i=0;i<pr.col;++i)
+	int** sequences = (int**)calloc(Nstates,sizeof(int*));
+	for(i=0;i<A.col;++i)
+		sequences[i] = (int*)calloc(A.col,sizeof(int));
+	
+	for(i=0;i<A.col;++i)
 	{
-		if(pr.get(0,i)> maximum)
+		prob[i] = q.get(0,i)*B.get(i,stateSequence[0]);
+		//prob[i] = log(q.get(0,i)*B.get(i,stateSequence[0]));
+		if(prob[i]> maximum)
 		{
-			maximum = pr.get(0,i);
+			maximum = prob[i];
 			index = i;
 		}
 	}
-	Sequence[0] = index;
 	
+	/*
+	std::cout << "\nstage 0" << std::endl;
+	for(i=0;i<A.col;++i)
+		std::cout << prob[i] << " ";
+	std::cout<<"\n\n"<<std::endl;
+	*/
+
 	for(int s=1;s<Nstates;++s)
 	{
 		state = stateSequence[s];
-		std::cout << "\nstate: " << state << "\nP ";
-		pr.print();
 		
 		for(j=0;j<A.col;++j)
 		{
-			matrix temp = A.getCol(j).transpose()&pr;
-			maximum = -200;
-			
-			std::cout << "\nTemp: "<< j <<": " << std::endl;
-			for(k=0;k<temp.col;++k)
+			maximum = std::numeric_limits<double>::min();
+			for(k=0;k<A.col;++k)
 			{
-			std::cout << temp.get(0,k)*B.get(j,state) << " (" << k << ") " << std::endl;
-				if(temp.get(0,k) > maximum)
+				double te = prob[k] * A.get(k,j) * B.get(j,state);
+				//double te = prob[k] + log(A.get(k,j)) + log(B.get(j,state));
+				//std::cout << prob[k] << " x "  << A.get(k,j) <<  " x " << B.get(j,state) <<" "<<"("<< k << ")"<<"| ";
+				if(te > maximum)
 				{
-					maximum = temp.get(0,k);
+					maximum = te;
 					index = k;
-				}
-			tempArray[j] = maximum*B.get(j,state);
-			tempIndex[j] = index;
-			}			
-		}
-		
-		//std::cout << "\nMax: "<< tempArray[j] << "\nIndex: " << tempIndex[j] << "\nj = " << j << std::endl;
-		
-		//find max in tempArray
-		maximum = -200;
-		for(j=0;j<A.col;++j)
-		{
-			if(tempArray[j] > maximum)
-			{
-				maximum = tempArray[j];
-				index = tempIndex[j];
-				std::cout << "index " << tempIndex[j] << std::endl;
+				}				
 			}
+		tempArray[j] = maximum;
+		//tempIndex[j] = index;
+		
+		sequences[j][s-1] = index;
+		
+		//std::cout << "j " << j << " A.col " << A.col << std::endl;
+		//std::cout << "s " << s << " Nstates " << Nstates <<std::endl;
+		
+		//std::cout <<  "MAX: (" << prob[index] << " x "  << A.get(index,j) <<  " x " << B.get(j,state) << ")= " << tempArray[j] << " index="<< index << std::endl; 
 		}
+				
+		for(i=0;i<A.col;++i)
+			prob[i] = tempArray[i];
 		
-		Sequence[s] = index;
-		
-		//turn tempArrat into a matrix
-		double** t =(double**)calloc(1,sizeof(double*));
-		t[0] = tempArray;
-		pr = matrix(t,1,A.col);
-		
+		/*
+		std::cout << "stage "<< s << std::endl;
+		for(i=0;i<A.col;++i)
+			std::cout << prob[i] << " ";
+		std::cout<<"\n\n"<<std::endl;
+		*/
 	}
-	std::cout << "P ";
-	pr.print();
-	std::cout << "\nSequence ";
-	for(i=0;i<Nstates;++i)
-		std::cout << Sequence[i] << " ";
-	
-	
-    /**Viterbi algorithm*/
 	/*
-    int K = A.col;
-    int M = B.col;
-    int T = Nstates;
-    int i,j,k;
-
-    double maximum;
-    double temp;
-
-    matrix pi = q&B.getCol(stateSequence[0]).transpose();
-    //pi.print();
-
-    double** T1 = A.initialize(K,T);
-    double** T2 = A.initialize(K,T);
-
-    for(i=0;i<K;++i)
-    {
-        T1[i][1] = pi.get(0,i)*B.get(i,stateSequence[0]);
-        T2[i][1] = 0;
-    }
-    for(i=1;i<T;++i)
-    {
-        for(j=0;j<K;++j)
-        {
-            maximum = -200;
-            index = 0;
-
-            for(k=0;k<K;++k)
-            {
-                temp = T1[k][i-1]*A.get(k,j)*B.get(j,stateSequence[i]);
-                //std::cout << temp << std::endl;
-                if(temp>maximum)
-                {
-                    maximum = temp;
-                    index = k;
-                }
-            }
-            T1[j][i] =maximum;
-            T2[j][i] =index;
-        }
-    }
-    //double* Z = (double*)calloc(T , sizeof(int));
-    int* X = (int*)calloc(T , sizeof(int));
-
-    maximum = -200;
-    index = 0;
-
-    for(k=0;k<K;++k)
-    {
-        if(T1[k][T-1]>maximum)
-        {
-            maximum = T1[k][T-1];
-            index = k;
-        }
-    }
-    //Z[T-1] = index;
-    X[T-1] = index;
-
-    for(i=T-1;i>1;--i)
-    {
-        //Z[i-1] = T2[Z[i][i];
-        X[i-1] = T2[X[i]][i];
-    }
-
-    for(i=T-1;i>=0;--i)
-        std::cout << X[i]<< " ";
-    std::cout<<std::endl;
+	for(i=0;i<A.col;++i)
+	{
+		for(j=0;j<Nstates;++j)
+			std::cout << sequences[i][j] << " ";
+		std::cout << std::endl;
+	}
 	*/
-
+	
+	int current = 0;
+	maximum = std::numeric_limits<double>::min();
+	for(i=0;i<A.col;++i)
+	{
+		if(prob[i]>maximum)
+		{
+			maximum = prob[i];
+			current = i;
+		}
+	}
+	
+	/*
+	int* S = (int*)calloc(Nstates-1,sizeof(int));
+	S[Nstates-2] = current;
+	for(i=Nstates-3;i>=0;--i)
+	{
+		current = sequences[current][i];
+		S[i] = current;
+	}
+	
+	for(i=0;i<Nstates-1;++i)
+		std::cout << S[i] << " ";
+	std::cout << std::endl;
+	*/
+	/**funkar*/
+	
+	std::vector<int> e;
+	for(i = Nstates-2;i>=0;i--)
+	{
+		e.push_back(current);
+		current = sequences[current][i];
+		//std::cout <<"i " << i <<" current: " << current<< std::endl;
+	}
+	e.push_back(current);
+	
+	for(i=e.size()-1;i>=0;i--)
+		std::cout << e[i] << " ";
+	std::cout<<std::endl;
+	
 	return 0;
 }
 
