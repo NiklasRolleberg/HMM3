@@ -233,6 +233,7 @@ int main(int argc, char **argv)
 	for(int s=1;s<Nstates;++s)
 	{
 		state = stateSequence[s];
+		std::cout <<"--State--" << state <<std::endl;
 
 		for(j=0;j<B.col;++j)
 		{
@@ -266,7 +267,7 @@ int main(int argc, char **argv)
 
 
 		std::cout << "stage "<< s << std::endl;
-		for(i=0;i<A.col;++i)
+		for(i=0;i<B.col;++i)
 			std::cout << prob[i] << " ";
 		std::cout<<"\n\n"<<std::endl;
 
