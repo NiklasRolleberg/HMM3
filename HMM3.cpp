@@ -171,11 +171,14 @@ int main(int argc, char **argv)
 	matrix q = matrix(board[2]);
 
 	std::vector<int> stateSequence;
-	int Nstates, index;
+	int T,N,M;
+	N = A.col;
+	M = B.col;
 	std::istringstream iss;
 	iss.str(board[3]);
-	iss >> Nstates;
-	for(int i=0;i<Nstates;++i) {
+	iss >> T;
+	for(int i=0;i<T;++i) {
+		int index;
 		iss >> index;
 		stateSequence.push_back(index);
 	}
@@ -190,110 +193,80 @@ int main(int argc, char **argv)
 	std::cout << "------------\n" << std::endl;
 	*/
 
-	int state,i,j,k;
-	double maximum = std::numeric_limits<double>::min();
+	int state;//,i,k;
+	double maximum = -std::numeric_limits<double>::max();
 
-	double* tempArray = (double*)calloc(A.col,sizeof(double));
-	double* prob = (double*)calloc(A.col,sizeof(double));
-
-	int** sequences = (int**)calloc(Nstates,sizeof(int*));
-	for(i=0;i<A.col;++i)
-		sequences[i] = (int*)calloc(B.col,sizeof(int));
-    double** ProbSequences = A.initialize(Nstates,A.col); //test
-
-	for(i=0;i<A.col;++i)
+	double* tempArray = (double*)calloc(N,sizeof(double));
+	double* prob = (double*)calloc(N,sizeof(double));
+	int sequences[T][N];
+    
+	//t=0;
+	for(int i=0;i<N;++i)
 	{
 		prob[i] = q.get(0,i)*B.get(i,stateSequence[0]);
-		//prob[i] = log(q.get(0,i)*B.get(i,stateSequence[0]));
+		int index = 0;
 		if(prob[i]> maximum)
 		{
 			maximum = prob[i];
 			index = i;
 		}
+		sequences[0][i] = index;
 	}
 
-
+	/*
 	std::cout << "\nstage 0" << std::endl;
-	for(i=0;i<A.col;++i)
+	for(int i=0;i<A.col;++i)
 		std::cout << prob[i] << " ";
 	std::cout<<"\n\n"<<std::endl;
+	*/
 
-
-    if(Nstates==1){
-        maximum = prob[0];
-        index = 0;
-        for(i=1;i<B.col;++i)
-            if(prob[i]>maximum)
-                {maximum = prob[i]; index = i;}
-        std::cout << index <<std::endl;
-        return 0;
-    }
-
-
-	for(int s=1;s<Nstates;++s)
+	for(int t=1;t<T;++t)
 	{
-		state = stateSequence[s];
-		std::cout <<"--State--" << state <<std::endl;
+		state = stateSequence[t];
 
-		for(j=0;j<B.col;++j)
+		for(int i=0;i<N;++i)
 		{
-			maximum = prob[0] * A.get(0,j) * B.get(j,state);;
-			index = 0;
-			std::cout << prob[0] << " x "  << A.get(0,j) <<  " x " << B.get(j,state) <<" "<<"("<< 0 << ")"<<"| ";
-			for(k=1;k<A.col;++k)
+			maximum = prob[0] * A.get(0,i) * B.get(i,state);;
+			int index = 0;
+			//std::cout << prob[0] << " x "  << A.get(0,i) <<  " x " << B.get(i,state) <<" "<<"("<< 0 << ")"<<"| ";
+			for(int k=1;k<N;++k)
 			{
-				double te = prob[k] * A.get(k,j) * B.get(j,state);
-				//double te = prob[k] + log(A.get(k,j)) + log(B.get(j,state));
-				std::cout << prob[k] << " x "  << A.get(k,j) <<  " x " << B.get(j,state) <<" "<<"("<< k << ")"<<"| ";
+				double te = prob[k] * A.get(k,i) * B.get(i,state);
+				//std::cout << prob[k] << " x "  << A.get(k,i) <<  " x " << B.get(i,state) <<" "<<"("<< k << ")"<<"| ";
 				if(te > maximum)
 				{
 					maximum = te;
 					index = k;
 				}
 			}
-		tempArray[j] = maximum;
-
-		sequences[j][s-1] = index;
-
-		ProbSequences[j][s-1] = maximum;
-        std::cout << "index: " << index << " Maximum: " << maximum << std::endl;
-        //std::cout << "j " << j << " A.col " << A.col << std::endl;
-		//std::cout << "s " << s << " Nstates " << Nstates <<std::endl;
-		//std::cout <<  "MAX: (" << prob[index] << " x "  << A.get(index,j) <<  " x " << B.get(j,state) << ")= " << tempArray[j] << " index="<< index << std::endl;
+			//std::cout << "\nt: " << t <<"\ni: " << i << "\nindex: " << index << std::endl;
+			tempArray[i] = maximum;
+			sequences[t][i] = index;
 		}
 
-		for(i=0;i<B.col;++i)
+		for(int i=0;i<N;++i)
 			prob[i] = tempArray[i];
 
-
-		std::cout << "stage "<< s << std::endl;
-		for(i=0;i<B.col;++i)
+		/*
+		std::cout << "stage "<< t << std::endl;
+		for(int i=0;i<B.col;++i)
 			std::cout << prob[i] << " ";
 		std::cout<<"\n\n"<<std::endl;
-
+		*/
 	}
-
-	for(i=0;i<B.col;++i)
+	/*
+	for(int t=0;t<T;++t)
 	{
-		for(j=0;j<Nstates;++j)
-			std::cout << sequences[i][j] << " ";
+		for(int i=0;i<T;++i)
+			std::cout << sequences[t][i] << " ";
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;
-
-	for(i=0;i<B.col;++i)
-	{
-		for(j=0;j<Nstates;++j)
-			std::cout << ProbSequences[i][j] << " | ";
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-
-
-
+	*/
+	
 	int current = 0;
 	maximum = prob[0];
-	for(i=0;i<B.row;++i)
+	for(int i=1;i<N;++i)
 	{
 		if(prob[i]>maximum)
 		{
@@ -304,23 +277,24 @@ int main(int argc, char **argv)
 
 	std::vector<int> e;
 	//std::cout <<"i " << i <<" current: " << current<< std::endl;
-	for(i = Nstates-2;i>=0;i--)
+	for(int t = (T-1);t>=0;t--)
 	{
 		e.push_back(current);
-		current = sequences[current][i];
+		current = sequences[t][current];
 		//std::cout <<"i " << i <<" current: " << current<< std::endl;
 	}
-	e.push_back(current);
+	//e.push_back(current);
 
     //std::cout << e.size() << std::endl;
 
-	for(i=e.size()-1;i>=0;i--)
+	for(int i=e.size()-1;i>=0;i--)
     {
         //std::cout << " ("<<i<<")->";
         std::cout << e[i]<< " ";
     }
 	std::cout<<std::endl;
-
+	
+	
 	return 0;
 }
 
